@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import "@aws-amplify/ui-react/styles.css";
-import { Storage } from 'aws-amplify';
+import { uploadData, getUrl, remove } from 'aws-amplify/storage';
 
 import {
   Button,
@@ -9,6 +9,7 @@ import {
   Heading,
   Text,
   TextField,
+  Image,
   View,
   withAuthenticator,
 } from "@aws-amplify/ui-react";
@@ -35,8 +36,8 @@ const App = ({ signOut }) => {
     await Promise.all(
       notesFromAPI.map(async (note) => {
         if (note.image) {
-          const url = await Storage.get(note.name);
-          note.image = url;
+          const url = await getUrl({ key: note.name });
+          note.image = url.url;
         }
         return note;
       })
@@ -53,7 +54,7 @@ const App = ({ signOut }) => {
       description: form.get("description"),
       image: image.name,
     };
-    if (!!data.image) await Storage.put(data.name, image);
+    if (!!data.image) await uploadData({ key: data.name, data: image });
 
     await client.graphql({
       query: createNoteMutation,
@@ -66,7 +67,7 @@ const App = ({ signOut }) => {
   async function deleteNote({ id }) {
     const newNotes = notes.filter((note) => note.id !== id);
     setNotes(newNotes);
-    await Storage.remove(name);
+    await remove({ key: id.name });
 
     await client.graphql({
       query: deleteNoteMutation,
@@ -123,7 +124,7 @@ const App = ({ signOut }) => {
               <Image
                 src={note.image}
                 alt={`visual aid for ${notes.name}`}
-                style={{ width: 400 }}
+                style={{ width: 40 }}
               />
             )}
             <Button variation="link" onClick={() => deleteNote(note)}>
